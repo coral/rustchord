@@ -1,0 +1,3 @@
+- Use https://rust-lang.github.io/rust-bindgen/tutorial-3.html to generate bindings dynamically
+- Create wrappers around shitty C names
+- Actually try to use the library
