@@ -19,6 +19,8 @@ fn main() {
         .include("colorchord/colorchord2/rawdraw")
         .include("colorchord/embeddedcommon")
         .include("./include")
+        .flag("-ffast-math")
+        .flag("-O1")
         .compile("colorchord");
 
     println!(r"cargo:rustc-link-search=."); 
