@@ -5,8 +5,11 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
+
     cc::Build::new()
     .shared_flag(true)
+    .warnings(false)
+    .extra_warnings(false)
     .files(&[
         "colorchord/colorchord2/color.c",
         "colorchord/colorchord2/notefinder.c",
@@ -27,16 +30,36 @@ fn main() {
         .flag("-ffast-math")
         .flag("-O1")
         .compile("colorchord");
+        println!(r"cargo:rustc-link-search=.");
         
-        let bindings = bindgen::Builder::default()
-        .header("colorchord/colorchord2/color.c")
+        
+        // println!("cargo:rustc-link-search=colorchord/colorchord2/rawdraw");
+        // println!("cargo:rustc-link-lib=rawdraw");
+
+        let m  = [
+        "color.h",
+        "configs.h",
+        "decompose.h",
+        "dft.h",
+        "filter.h",
+        "hook.h",
+        "notefinder.h",
+        "outdrivers.h",
+        "parameters.h"];
+
+        let mut bld = bindgen::Builder::default();
+        for header in m.iter() {
+            let hdr: String = "colorchord/colorchord2/".to_string() + &header.to_string();
+            println!("cargo:rerun-if-changed={:?}", hdr);
+            bld = bld.header(hdr);
+        }
+        let bindings = bld.clang_arg("-Icolorchord/colorchord2/rawdraw")
         .generate()
         .expect("Unable to generate bindings");
-        
+
         let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
         bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
         
-        println!(r"cargo:rustc-link-search=."); 
     }
