@@ -29,7 +29,7 @@ fn main() {
     //r.start();
     let host = cpal::default_host();
     
-    let notefinder = unsafe{ rustchord::notefinder::CreateNoteFinder(48000) };
+    let notefinder = unsafe{ rustchord::CreateNoteFinder(48000) };
     
     let device = host
     .default_input_device()
@@ -53,7 +53,7 @@ fn main() {
         
         while let Ok(v) = rx.recv() {
             unsafe {
-                rustchord::notefinder::RunNoteFinder(notefinder, v.as_ptr(), 0, 1024)
+                rustchord::RunNoteFinder(notefinder, v.as_ptr(), 0, 1024)
             }
             unsafe {
                 //println!("{:?}", (*notefinder).freqbins);
@@ -70,7 +70,7 @@ fn main() {
                     //print!("{:?} ", note);
                     bins.push(Note{
                         amplitude: *(*notefinder).note_amplitudes_out.offset(l as isize),
-                        color: rustchord::color::CCtoHEX(note, 1.0, 1.0),
+                        color: rustchord::CCtoHEX(note, 1.0, 1.0),
                     })
                 }
                 

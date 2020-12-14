@@ -29,13 +29,10 @@ fn main() {
         .include("./include")
         .flag("-ffast-math")
         .flag("-O1")
+        .flag("-Wno-everything")
         .compile("colorchord");
         println!(r"cargo:rustc-link-search=.");
         
-        
-        // println!("cargo:rustc-link-search=colorchord/colorchord2/rawdraw");
-        // println!("cargo:rustc-link-lib=rawdraw");
-
         let m  = [
         "color.h",
         "configs.h",
