@@ -26,7 +26,6 @@ fn main() {
     
     let (tx, rx) = channel();
     let mut r = ringbuffer::new(tx);
-    //r.start();
     let host = cpal::default_host();
     
     let notefinder = unsafe{ rustchord::CreateNoteFinder(48000) };
