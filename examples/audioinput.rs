@@ -19,16 +19,16 @@ struct Note {
 fn main() {
     println!("Hello, world!");
     
-    let mut window: PistonWindow =
-    WindowSettings::new("Hello Piston!", [1400, 480])
-    .exit_on_esc(true).build().unwrap();
-    window.next();
+    // let mut window: PistonWindow =
+    // WindowSettings::new("Hello Piston!", [1400, 480])
+    // .exit_on_esc(true).build().unwrap();
+    // window.next();
     
     let (tx, rx) = channel();
     let mut r = ringbuffer::new(tx);
     let host = cpal::default_host();
     
-    let notefinder = unsafe{ rustchord::CreateNoteFinder(48000) };
+    let mut notefinder = rustchord::Notefinder::new(48000);
     
     let device = host
     .default_input_device()
@@ -51,55 +51,68 @@ fn main() {
         err_fn);
         
         while let Ok(v) = rx.recv() {
-            unsafe {
-                rustchord::RunNoteFinder(notefinder, v.as_ptr(), 0, 1024)
-            }
-            unsafe {
-                //println!("{:?}", (*notefinder).freqbins);
-                //println!("{:?}", (*notefinder).freqbins * (*notefinder).octaves);
-                let notepeaks = (*notefinder).freqbins / 2;
+            notefinder.run(&v);
+            let res = notefinder.result();
 
-                let mut bins = Vec::new();
-                
-                for l in  0..notepeaks {
-                    if *(*notefinder).note_amplitudes_out.offset(l as isize) < 0.0 {
-                        continue;
-                    }
-                    let note = *(*notefinder).note_positions.offset(l as isize) / (*notefinder).freqbins as f32;
-                    //print!("{:?} ", note);
-                    bins.push(Note{
-                        amplitude: *(*notefinder).note_amplitudes_out.offset(l as isize),
-                        color: rustchord::CCtoHEX(note, 1.0, 1.0),
-                    })
+            for n in 0..res.notepeaks {
+                if res.amplitudes[n as usize] < 0.0 {
+                    continue;
                 }
+                //print!("{:?} ", res.positions[n as usize]/res.freqbins as f32);
+
+            }
+
+            println!("");
+            
+            // unsafe {
+            //     rustchord::RunNoteFinder(notefinder, v.as_ptr(), 0, 1024)
+            // }
+            // unsafe {
+            //     //println!("{:?}", (*notefinder).freqbins);
+            //     //println!("{:?}", (*notefinder).freqbins * (*notefinder).octaves);
+            //     let notepeaks = (*notefinder).freqbins / 2;
+
+            //     let mut bins = Vec::new();
                 
-                if let Some(event) = window.next() {
+            //     for l in  0..notepeaks {
+            //         if *(*notefinder).note_amplitudes_out.offset(l as isize) < 0.0 {
+            //             continue;
+            //         }
+            //         let note = *(*notefinder).note_positions.offset(l as isize) / (*notefinder).freqbins as f32;
+            //         //print!("{:?} ", note);
+            //         // bins.push(Note{
+            //         //     amplitude: *(*notefinder).note_amplitudes_out.offset(l as isize),
+            //         //     color: rustchord::CCtoHEX(note, 1.0, 1.0),
+            //         // })
+            //     }
+                
+                // if let Some(event) = window.next() {
                     
                     
-                    window.draw_2d(&event, |context, graphics, _device| {
-                        clear([1.0; 4], graphics);
+                //     window.draw_2d(&event, |context, graphics, _device| {
+                //         clear([1.0; 4], graphics);
 
-                        for (i, n) in bins.iter().enumerate() {
-                           // print!("{:x} ", b.color);
-                            let (b, g, r) = ( (n.color >> 16)&0xff, (n.color >> 8)&0xff, n.color&0xff );
-                            let (r, g, b) = (r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0); 
+                //         for (i, n) in bins.iter().enumerate() {
+                //            // print!("{:x} ", b.color);
+                //             let (b, g, r) = ( (n.color >> 16)&0xff, (n.color >> 8)&0xff, n.color&0xff );
+                //             let (r, g, b) = (r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0); 
 
-                            rectangle([r, g, b, 1.0],
-                                [((i * 100) + 10) as f64 , 0.0, 100.0, n.amplitude as f64 * 400.0],
-                                context.transform,
-                                graphics);
+                //             rectangle([r, g, b, 1.0],
+                //                 [((i * 100) + 10) as f64 , 0.0, 100.0, n.amplitude as f64 * 400.0],
+                //                 context.transform,
+                //                 graphics);
                             
 
-                         }
-                        });
-                    }
+                //          }
+                //         });
+                //     }
                     
                     
-                }
+                // }
                 
-            }
-            std::thread::sleep(std::time::Duration::from_secs(120));
-            drop(stream);
+        }
+        std::thread::sleep(std::time::Duration::from_secs(120));
+        drop(stream);
             
             
         }
