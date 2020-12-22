@@ -3,9 +3,9 @@ use anyhow::Error;
 use cpal::traits::{DeviceTrait, HostTrait};
 use std::sync::mpsc::*;
 use std::slice;
-extern crate rustchord;
+use rustchord::{self, cc_to_rgb};
 
-extern crate piston_window;
+use piston_window;
 
 use piston_window::*;
 
@@ -19,10 +19,10 @@ struct Note {
 fn main() {
     println!("Hello, world!");
     
-    // let mut window: PistonWindow =
-    // WindowSettings::new("Hello Piston!", [1400, 480])
-    // .exit_on_esc(true).build().unwrap();
-    // window.next();
+    let mut window: PistonWindow =
+    WindowSettings::new("Hello Piston!", [1400, 480])
+    .exit_on_esc(true).build().unwrap();
+    window.next();
     
     let (tx, rx) = channel();
     let mut r = ringbuffer::new(tx);
@@ -52,18 +52,39 @@ fn main() {
         
         while let Ok(v) = rx.recv() {
             notefinder.run(&v);
-            let res = notefinder.result();
+            let res = notefinder.get_folded();
 
-            for n in 0..res.notepeaks {
-                if res.amplitudes[n as usize] < 0.0 {
-                    continue;
-                }
-                //print!("{:?} ", res.positions[n as usize]/res.freqbins as f32);
+            let width = window.size().width / 24.;
+            let bottom = window.size().height / 2.;
+            
+            if let Some(event) = window.next() {
 
+                window.draw_2d(&event, |context, graphics, _device| {
+                    clear([1.0; 4], graphics);
+
+                    //Frequency bins
+                    for (i, n) in res.into_iter().enumerate() {
+
+                        let c = cc_to_rgb((i as f32 + 0.5) / 24., 1.0, 1.0);
+
+                        rectangle([c[0], c[1], c[2], 1.0],
+                            [width * i as f64, bottom, width, -(*n as f64 * 800.)],
+                            context.transform,
+                            graphics);
+
+                    }
+
+                });
             }
 
-            println!("");
-            
+            // for n in 0..res.notepeaks {
+            //     if res.amplitudes[n as usize] < 0.0 {
+            //         continue;
+            //     }
+            //     //print!("{:?} ", res.positions[n as usize]/res.freqbins as f32);
+
+            // }
+
             // unsafe {
             //     rustchord::RunNoteFinder(notefinder, v.as_ptr(), 0, 1024)
             // }
@@ -89,7 +110,7 @@ fn main() {
                 // if let Some(event) = window.next() {
                     
                     
-                //     window.draw_2d(&event, |context, graphics, _device| {
+                //     window.draw_2d(&event, |context, graphics, _device| {a
                 //         clear([1.0; 4], graphics);
 
                 //         for (i, n) in bins.iter().enumerate() {
@@ -97,10 +118,6 @@ fn main() {
                 //             let (b, g, r) = ( (n.color >> 16)&0xff, (n.color >> 8)&0xff, n.color&0xff );
                 //             let (r, g, b) = (r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0); 
 
-                //             rectangle([r, g, b, 1.0],
-                //                 [((i * 100) + 10) as f64 , 0.0, 100.0, n.amplitude as f64 * 400.0],
-                //                 context.transform,
-                //                 graphics);
                             
 
                 //          }
