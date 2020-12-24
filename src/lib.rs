@@ -81,8 +81,9 @@ impl Notefinder {
 
     pub fn get_notes(&self) -> Vec<Note> {
         let freqbins: f32 = unsafe { (*self.nf).freqbins } as f32;
+        let note_peaks: usize = unsafe { (*self.nf).note_peaks } as usize;
         let mut notes: Vec<Note> = Vec::new();
-        for i in 0..12 {
+        for i in 0..note_peaks {
             unsafe {
                 let dist = (*self.nf).dists.offset(i as isize);
                 notes.push(Note {
