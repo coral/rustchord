@@ -9,9 +9,6 @@ use piston_window;
 
 use piston_window::*;
 
-#[link(name = "colorchord")]
-extern "C" {}
-
 struct Note {
     color: u32,
     amplitude: f32,
