@@ -74,7 +74,8 @@ fn main() {
                 }
 
                 for (i, n) in notes.into_iter().enumerate() {
-                    let c = cc_to_rgb((n.id as f32 + 0.5) / 24., 1.0, 1.0);
+                    if !n.active { continue; }
+                    let c = cc_to_rgb(n.id as f32, 1.0, 1.0);
 
                     rectangle(
                         [c[0], c[1], c[2], 1.0],
