@@ -63,7 +63,6 @@ fn main() {
             }
         });
     }
-    //}
 }
 
 fn audioprocess(c: Sender<NoteResult>) {

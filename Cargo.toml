@@ -15,7 +15,8 @@ cc = "1.0.66"
 bindgen = "0.56.0"
 
 [dependencies]
-anyhow = "1.0.35"
-cpal = "0.13.1"
 palette = { git = "https://github.com/Ogeon/palette" }
+
+[dev-dependencies]
 piston_window = "0.116.0"
+cpal = "0.13.1"
