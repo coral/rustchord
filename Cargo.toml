@@ -20,6 +20,7 @@ cc = "1.0.66"
 bindgen = "0.56.0"
 
 [dependencies]
+anyhow = "1.0.36"
 palette = "0.5.0"
 
 [dev-dependencies]

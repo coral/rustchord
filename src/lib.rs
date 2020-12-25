@@ -1,6 +1,7 @@
 use std::slice;
 mod internal;
 
+use anyhow::*;
 use palette::{ConvertInto, Hsv, LinSrgb, Pixel};
 
 pub struct NotefinderResult<'a> {
@@ -78,6 +79,30 @@ impl Notefinder {
         return unsafe {
             slice::from_raw_parts((*self.nf).folded_bins, (*self.nf).freqbins as usize)
         };
+    }
+
+    pub fn set_amplification(&mut self, amplification: f32) -> Result<(), anyhow::Error> {
+        if amplification < 0. || amplification > 50. {
+            return Err(anyhow!("Value out of scope: {}", amplification));
+        }
+        unsafe { (*self.nf).amplify = amplification }
+        Ok(())
+    }
+
+    pub fn set_filter_strength(&mut self, filter_strength: f32) -> Result<(), anyhow::Error> {
+        if filter_strength < 0. || filter_strength > 2. {
+            return Err(anyhow!("Value out of scope: {}", filter_strength));
+        }
+        unsafe { (*self.nf).filter_strength = filter_strength }
+        Ok(())
+    }
+
+    pub fn set_base_hz(&mut self, base_hz: f32) -> Result<(), anyhow::Error> {
+        if base_hz < 0. || base_hz > 22000. {
+            return Err(anyhow!("Value out of scope: {}", base_hz));
+        }
+        unsafe { (*self.nf).filter_strength = base_hz }
+        Ok(())
     }
 }
 
