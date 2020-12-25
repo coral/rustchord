@@ -2,6 +2,19 @@
 
 These are simple bindings around the Notefinder construct in [Colorchord](https://github.com/cnlohr/colorchord). Colorchord is an amazing piece of software written by [CNLohr](https://github.com/cnlohr). I've been wanting to use the algorithm in different projects and decided to write a easy Rust bindings that allows you to run the algorithm against audio acquired in Rust.
 
+### Using the binding
+
+The Notefinder expects to read samples from a ringbuffer in order to generate the bucketed notes. For this reason you need to provide a simple ringbuffer with audio samples in `f32` format. The `audioinput` showcases how to do this.
+
+First create a new instance of the Notefinder with the samplerate that's expected:
+`let mut notefinder = rustchord::Notefinder::new(48000)`
+
+Then provide samples in a buffer as you process them:
+`notefinder.run(&samplevec)`
+
+After Notefinder has ran you can get the folded notes by doing:
+`notefinder.get_notes()`
+
 ### Building from Git
 
 ```
