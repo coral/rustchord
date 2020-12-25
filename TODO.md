@@ -1,0 +1,2 @@
+- Fix the color algorithm to closer match the C algo in colorchord.
+- Implement an actual ringbuffer interface internally in the library.
