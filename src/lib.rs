@@ -1,7 +1,7 @@
 use std::slice;
 mod internal;
 
-use palette::{FromColor, Hsv, IntoColor, Pixel, Srgb};
+use palette::{ConvertInto, Hsv, Pixel, Srgb};
 
 pub struct NotefinderResult<'a> {
     pub freqbins: i32,
@@ -98,6 +98,6 @@ pub fn cc_to_rgb(mut note: f32, saturation: f32, value: f32) -> [f32; 3] {
         hue = (12.0 - note) / 8.0 + 1.0 / 6.0;
     }
 
-    let c: Hsv = Hsv::new(hue * 360., saturation, value).into_color();
-    Srgb::from_color(c).into_format().into_raw()
+    let c: Srgb = Hsv::new(hue * 360., saturation, value).convert_into();
+    c.into_format().into_raw()
 }
