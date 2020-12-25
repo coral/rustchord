@@ -84,7 +84,7 @@ impl Notefinder {
 pub struct Color {}
 
 pub fn cc_to_rgb(mut note: f32, saturation: f32, value: f32) -> [f32; 3] {
-    let mut hue = 0.0;
+    let hue: f32;
     note %= 1.0;
     note *= 12.0;
     if note < 4.0 {

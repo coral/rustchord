@@ -1,18 +1,11 @@
-use anyhow::Error;
 use cpal;
 use cpal::traits::{DeviceTrait, HostTrait};
 use rustchord::{self, cc_to_rgb};
-use std::slice;
 use std::sync::mpsc::*;
 
 use piston_window;
 
 use piston_window::*;
-
-struct Note {
-    color: u32,
-    amplitude: f32,
-}
 
 fn main() {
     println!("Hello, world!");
@@ -23,7 +16,7 @@ fn main() {
         .unwrap();
     window.next();
     let (tx, rx) = channel();
-    let mut r = ringbuffer::new(tx);
+    let mut r = Ringbuffer::new(tx);
     let host = cpal::default_host();
     let mut notefinder = rustchord::Notefinder::new(48000);
     let device = host
@@ -99,15 +92,15 @@ fn main() {
 const BUFFER_SIZE: usize = 8096;
 type Buffer = [f32; BUFFER_SIZE];
 
-pub struct ringbuffer {
+pub struct Ringbuffer {
     soundhead: usize,
     buffer: Buffer,
     nf: Sender<Vec<f32>>,
 }
 
-impl ringbuffer {
-    fn new(nf: Sender<Vec<f32>>) -> ringbuffer {
-        return ringbuffer {
+impl Ringbuffer {
+    fn new(nf: Sender<Vec<f32>>) -> Ringbuffer {
+        return Ringbuffer {
             buffer: [0.0f32; BUFFER_SIZE],
             soundhead: 0,
             nf,
