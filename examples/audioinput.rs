@@ -10,7 +10,7 @@ use piston_window::*;
 fn main() {
     println!("Hello, world!");
 
-    let mut window: PistonWindow = WindowSettings::new("Hello Piston!", [1400, 480])
+    let mut window: PistonWindow = WindowSettings::new("colorchord binding demo", [1400, 480])
         .exit_on_esc(true)
         .build()
         .unwrap();
