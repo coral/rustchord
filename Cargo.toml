@@ -6,6 +6,7 @@ edition = "2018"
 license-file = "LICENSE.md"
 keywords = ["colorchord", "audio"]
 categories = ["multimedia::audio", "api-bindings"]
+description = "Colorchord bindings for Rust"
 
 
 [lib]
