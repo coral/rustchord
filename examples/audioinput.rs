@@ -46,8 +46,6 @@ fn main() {
     );
 
     while let Ok(v) = rx.recv() {
-        //let bm: Vec<_> = v.into_iter().step_by(2).collect();
-
         notefinder.run(&v);
         let notes = notefinder.get_notes();
         let res = notefinder.get_folded();
@@ -74,7 +72,9 @@ fn main() {
                 }
 
                 for (i, n) in notes.into_iter().enumerate() {
-                    if !n.active { continue; }
+                    if !n.active {
+                        continue;
+                    }
                     let c = cc_to_rgb(n.id as f32, 1.0, 1.0);
 
                     rectangle(
@@ -91,52 +91,6 @@ fn main() {
                 }
             });
         }
-
-        // for n in 0..res.notepeaks {
-        //     if res.amplitudes[n as usize] < 0.0 {
-        //         continue;
-        //     }
-        //     //print!("{:?} ", res.positions[n as usize]/res.freqbins as f32);
-
-        // }
-
-        // unsafe {
-        //     rustchord::RunNoteFinder(notefinder, v.as_ptr(), 0, 1024)
-        // }
-        // unsafe {
-        //     //println!("{:?}", (*notefinder).freqbins);
-        //     //println!("{:?}", (*notefinder).freqbins * (*notefinder).octaves);
-        //     let notepeaks = (*notefinder).freqbins / 2;
-
-        //     let mut bins = Vec::new();
-
-        //     for l in  0..notepeaks {
-        //         if *(*notefinder).note_amplitudes_out.offset(l as isize) < 0.0 {
-        //             continue;
-        //         }
-        //         let note = *(*notefinder).note_positions.offset(l as isize) / (*notefinder).freqbins as f32;
-        //         //print!("{:?} ", note);
-        //         // bins.push(Note{
-        //         //     amplitude: *(*notefinder).note_amplitudes_out.offset(l as isize),
-        //         //     color: rustchord::CCtoHEX(note, 1.0, 1.0),
-        //         // })
-        //     }
-
-        // if let Some(event) = window.next() {
-
-        //     window.draw_2d(&event, |context, graphics, _device| {a
-        //         clear([1.0; 4], graphics);
-
-        //         for (i, n) in bins.iter().enumerate() {
-        //            // print!("{:x} ", b.color);
-        //             let (b, g, r) = ( (n.color >> 16)&0xff, (n.color >> 8)&0xff, n.color&0xff );
-        //             let (r, g, b) = (r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0);
-
-        //          }
-        //         });
-        //     }
-
-        // }
     }
     std::thread::sleep(std::time::Duration::from_secs(120));
     drop(stream);
@@ -169,15 +123,12 @@ impl ringbuffer {
         self.soundhead += input.len();
 
         if self.soundhead < self.buffer.len() {
-            self.buffer[old_head..self.soundhead]
-                .copy_from_slice(input);
+            self.buffer[old_head..self.soundhead].copy_from_slice(input);
         } else {
             self.soundhead %= self.buffer.len();
             let first_len = self.buffer.len() - old_head;
-            self.buffer[old_head..]
-                .copy_from_slice(&input[..first_len]);
-            self.buffer[..self.soundhead]
-                .copy_from_slice(&input[first_len..]);
+            self.buffer[old_head..].copy_from_slice(&input[..first_len]);
+            self.buffer[..self.soundhead].copy_from_slice(&input[first_len..]);
         }
 
         let mut out = Vec::with_capacity(self.buffer.len());

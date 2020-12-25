@@ -43,41 +43,10 @@ impl Notefinder {
         };
     }
     pub fn run(&mut self, data: &[f32]) {
-        //dbg!(data);
         unsafe {
             internal::RunNoteFinder(self.nf, data.as_ptr(), 0, data.len() as i32);
         }
     }
-
-    // pub fn get_notes_old<'a>(&'a self) -> NotefinderResult<'a> {
-    //     let freqbins = unsafe { (*self.nf).freqbins };
-    //     let notepeaks = freqbins / 2;
-
-    //     return NotefinderResult {
-    //         freqbins,
-    //         notepeaks,
-    //         positions: unsafe {
-    //             slice::from_raw_parts((*self.nf).note_positions, freqbins as usize)
-    //         },
-    //         amplitudes: unsafe {
-    //             slice::from_raw_parts((*self.nf).note_amplitudes_out, notepeaks as usize)
-    //         },
-    //         folded: unsafe { slice::from_raw_parts((*self.nf).folded_bins, freqbins as usize) },
-    //         dists: unsafe {
-    //             (0..notepeaks)
-    //                 .map(|i| {
-    //                     let raw = (*self.nf).dists.offset(i as isize);
-    //                     NoteDists {
-    //                         amp: (*raw).amp,
-    //                         mean: (*raw).mean,
-    //                         sigma: (*raw).sigma,
-    //                         taken: (*raw).taken != 0,
-    //                     }
-    //                 })
-    //                 .collect::<Vec<_>>()
-    //         },
-    //     };
-    // }
 
     pub fn get_notes(&self) -> Vec<Note> {
         let freqbins: f32 = unsafe { (*self.nf).freqbins } as f32;
