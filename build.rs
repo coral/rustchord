@@ -20,7 +20,6 @@ fn main() {
             "colorchord/colorchord2/configs.c",
             "colorchord/colorchord2/chash.c",
             "colorchord/colorchord2/util.c",
-            //"colorchord/colorchord2/os_generic.c",
             "colorchord/embeddedcommon/DFT32.c",
         ])
         .include("colorchord/colorchord2")
