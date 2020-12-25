@@ -4,8 +4,6 @@ use rustchord::{self, cc_to_rgb};
 use std::sync::mpsc::*;
 use std::thread;
 
-use piston_window;
-
 use piston_window::*;
 
 struct NoteResult {
@@ -85,11 +83,12 @@ fn audioprocess(c: Sender<NoteResult>) {
     let err_fn = move |err| {
         eprintln!("an error occurred on stream: {}", err);
     };
-    let stream = device.build_input_stream(
+    let _stream = device.build_input_stream(
         config,
         move |data, inp: &cpal::InputCallbackInfo| r.audio_callback(data, inp),
         err_fn,
     );
+
     while let Ok(v) = rx.recv() {
         notefinder.run(&v);
 
