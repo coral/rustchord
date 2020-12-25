@@ -9,9 +9,6 @@ use piston_window;
 
 use piston_window::*;
 
-#[link(name = "colorchord")]
-extern "C" {}
-
 struct Note {
     color: u32,
     amplitude: f32,
@@ -77,7 +74,8 @@ fn main() {
                 }
 
                 for (i, n) in notes.into_iter().enumerate() {
-                    let c = cc_to_rgb((n.id as f32 + 0.5) / 24., 1.0, 1.0);
+                    if !n.active { continue; }
+                    let c = cc_to_rgb(n.id as f32, 1.0, 1.0);
 
                     rectangle(
                         [c[0], c[1], c[2], 1.0],
@@ -144,31 +142,48 @@ fn main() {
     drop(stream);
 }
 
+const BUFFER_SIZE: usize = 8096;
+type Buffer = [f32; BUFFER_SIZE];
+
 pub struct ringbuffer {
-    buffersize: usize,
     soundhead: usize,
-    buffer: [f32; 8192],
+    buffer: Buffer,
     nf: Sender<Vec<f32>>,
 }
 
 impl ringbuffer {
     fn new(nf: Sender<Vec<f32>>) -> ringbuffer {
         return ringbuffer {
-            buffersize: 8192,
-            buffer: [0.0f32; 8192],
+            buffer: [0.0f32; BUFFER_SIZE],
             soundhead: 0,
             nf,
         };
     }
 
-    fn audio_callback(&mut self, input: &[f32], denis: &cpal::InputCallbackInfo) {
-        self.buffer[self.soundhead..self.soundhead + input.len()].copy_from_slice(input);
-        self.soundhead += input.len();
-
-        if self.soundhead >= self.buffersize {
-            self.soundhead = self.soundhead % self.buffersize;
+    fn audio_callback(&mut self, mut input: &[f32], _info: &cpal::InputCallbackInfo) {
+        if input.len() > self.buffer.len() {
+            input = &input[..self.buffer.len()]
         }
 
-        self.nf.send(input.to_vec());
+        let old_head = self.soundhead;
+        self.soundhead += input.len();
+
+        if self.soundhead < self.buffer.len() {
+            self.buffer[old_head..self.soundhead]
+                .copy_from_slice(input);
+        } else {
+            self.soundhead %= self.buffer.len();
+            let first_len = self.buffer.len() - old_head;
+            self.buffer[old_head..]
+                .copy_from_slice(&input[..first_len]);
+            self.buffer[..self.soundhead]
+                .copy_from_slice(&input[first_len..]);
+        }
+
+        let mut out = Vec::with_capacity(self.buffer.len());
+        out.extend_from_slice(&self.buffer[self.soundhead..]);
+        out.extend_from_slice(&self.buffer[..self.soundhead]);
+
+        let _ = self.nf.send(out);
     }
 }

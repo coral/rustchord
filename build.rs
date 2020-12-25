@@ -21,6 +21,7 @@ fn main() {
         "colorchord/colorchord2/configs.c",
         "colorchord/colorchord2/chash.c",
         "colorchord/colorchord2/util.c",
+        "colorchord/colorchord2/os_generic.c",
         "colorchord/embeddedcommon/DFT32.c",
     ])
     .include("colorchord/colorchord2")
@@ -47,7 +48,7 @@ fn main() {
     let mut bld = bindgen::Builder::default();
     for header in m.iter() {
         let hdr: String = "colorchord/colorchord2/".to_string() + &header.to_string();
-        println!("cargo:rerun-if-changed={:?}", hdr);
+        println!("cargo:rerun-if-changed={}", hdr);
         bld = bld.header(hdr);
     }
     let bindings = bld.clang_arg("-Icolorchord/colorchord2/rawdraw")
