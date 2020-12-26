@@ -7,13 +7,22 @@ These are simple bindings around the Notefinder construct in [Colorchord](https:
 The Notefinder expects to read samples from a ringbuffer in order to generate the bucketed notes. For this reason you need to provide a simple ringbuffer with audio samples in `f32` format. The `audioinput` showcases how to do this.
 
 First create a new instance of the Notefinder with the samplerate that's expected:
+
 `let mut notefinder = rustchord::Notefinder::new(48000)`
 
 Then provide samples in a buffer as you process them:
+
 `notefinder.run(&samplevec)`
 
 After Notefinder has ran you can get the folded notes by doing:
+
 `notefinder.get_notes()`
+
+### Configuring Notefinder
+
+You can configure parameters of the Notefinder using the set\_ methods. For example, to change the input amplification you can use:
+
+`notefinder.set_amplification(10.0)`
 
 ### Building from Git
 
@@ -25,6 +34,7 @@ cargo build
 ```
 
 To run the audio input example, just do
+
 `cargo run --example audioinput`
 
 ### License

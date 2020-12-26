@@ -88,12 +88,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anyhow"
-version = "1.0.36"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68803225a7b13e47191bab76f2687382b60d259e8cf37f6e1893658b84bb9479"
-
-[[package]]
 name = "approx"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1899,7 +1893,6 @@ dependencies = [
 name = "rustchord"
 version = "0.2.1-alpha.0"
 dependencies = [
- "anyhow",
  "bindgen",
  "cc",
  "cpal",
