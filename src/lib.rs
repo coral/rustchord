@@ -1,17 +1,9 @@
 use std::slice;
 mod internal;
 
-use anyhow::*;
 use palette::{ConvertInto, Hsv, LinSrgb, Pixel};
-
-pub struct NotefinderResult<'a> {
-    pub freqbins: i32,
-    pub notepeaks: i32,
-    pub positions: &'a [f32],
-    pub amplitudes: &'a [f32],
-    pub folded: &'a [f32],
-    pub dists: Vec<NoteDists>,
-}
+use std::fmt::Debug;
+use thiserror::Error;
 
 #[derive(Debug)]
 pub struct NoteDists {
@@ -29,6 +21,35 @@ pub struct Note {
     pub amplitude_out: f32,
     pub amplitude_iir2: f32,
     pub endured: i32,
+}
+
+#[derive(Error, Debug)]
+pub enum NoteFinderValidationError<T: Debug> {
+    #[error("Outside valid range ({expected_min:?} - {expected_max:?}, found {found:?})")]
+    OutsideValidRange {
+        expected_min: T,
+        expected_max: T,
+        found: T,
+    },
+    #[error("unknown notefinder error")]
+    Unknown,
+}
+
+macro_rules! notefinder_configuration {
+    ($func_name:ident, $setting:ident, $v:ty, $name:ident, $min:expr, $max:expr) => {
+        pub fn $func_name(&self, $name: $v) -> Result<(), NoteFinderValidationError<$v>> {
+            if $name < $min || $name > $max {
+                return Err(NoteFinderValidationError::OutsideValidRange {
+                    expected_min: $min,
+                    expected_max: $max,
+                    found: $name,
+                });
+            }
+
+            unsafe { (*self.nf).$setting = $name }
+            Ok(())
+        }
+    };
 }
 
 pub struct Notefinder {
@@ -80,30 +101,115 @@ impl Notefinder {
             slice::from_raw_parts((*self.nf).folded_bins, (*self.nf).freqbins as usize)
         };
     }
-
-    pub fn set_amplification(&mut self, amplification: f32) -> Result<(), anyhow::Error> {
-        if amplification < 0. || amplification > 50. {
-            return Err(anyhow!("Value out of scope: {}", amplification));
-        }
-        unsafe { (*self.nf).amplify = amplification }
-        Ok(())
-    }
-
-    pub fn set_filter_strength(&mut self, filter_strength: f32) -> Result<(), anyhow::Error> {
-        if filter_strength < 0. || filter_strength > 2. {
-            return Err(anyhow!("Value out of scope: {}", filter_strength));
-        }
-        unsafe { (*self.nf).filter_strength = filter_strength }
-        Ok(())
-    }
-
-    pub fn set_base_hz(&mut self, base_hz: f32) -> Result<(), anyhow::Error> {
-        if base_hz < 0. || base_hz > 22000. {
-            return Err(anyhow!("Value out of scope: {}", base_hz));
-        }
-        unsafe { (*self.nf).filter_strength = base_hz }
-        Ok(())
-    }
+    notefinder_configuration!(set_octaves, octaves, i32, octaves, 0, 8);
+    notefinder_configuration!(set_frequency_bins, freqbins, i32, frequency_bins, 12, 48);
+    notefinder_configuration!(set_base_hz, base_hz, f32, base_hz, 0., 20000.);
+    notefinder_configuration!(
+        set_filter_strength,
+        filter_strength,
+        f32,
+        filter_strength,
+        0.,
+        1.
+    );
+    notefinder_configuration!(
+        set_filter_iterations,
+        filter_iter,
+        i32,
+        filter_iterations,
+        1,
+        8
+    );
+    notefinder_configuration!(
+        set_decompose_iterations,
+        decompose_iterations,
+        i32,
+        decompose_iterations,
+        100,
+        10000
+    );
+    // Amplify input across the board
+    notefinder_configuration!(set_amplification, amplify, f32, amplification, 0.0, 40.0);
+    // How much to compress the sound by before putting it into the compressor.
+    notefinder_configuration!(
+        set_compress_exponent,
+        compress_exponenet,
+        f32,
+        compress_exponent,
+        0.,
+        10.
+    );
+    // Exponent of the compressor lower = make more uniform.
+    notefinder_configuration!(
+        set_compress_coefficient,
+        compress_coefficient,
+        f32,
+        compress_coefficient,
+        0.,
+        5.
+    );
+    //at 300, there is still some minimal aliasing at higher frequencies.  Increase this for less low-end distortion
+    notefinder_configuration!(set_dft_speedup, dft_speedup, f32, dft_speedup, 100., 20000.);
+    //The "tightness" of the curve, or how many samples back to look?
+    notefinder_configuration!(set_dft_q, dft_q, f32, dft_q, 4., 64.);
+    //This controls the expected shape of the normal distributions.  I am not sure how to calculate this from samplerate, Q and bins.
+    notefinder_configuration!(set_default_sigma, default_sigma, f32, default_sigma, 0., 8.);
+    //How far established notes are allowed to "jump" in order to attach themselves to a new "peak"
+    notefinder_configuration!(
+        set_note_jumpability,
+        note_jumpability,
+        f32,
+        note_jumpability,
+        0.,
+        8.
+    );
+    //How close established notes need to be to each other before they can be "combined" into a single note.
+    notefinder_configuration!(
+        set_note_combine_distance,
+        note_combine_distance,
+        f32,
+        note_combine_distance,
+        0.,
+        4.
+    );
+    notefinder_configuration!(set_slope, slope, f32, slope, 0., 1.);
+    notefinder_configuration!(
+        set_note_attach_freq_iir,
+        note_attach_freq_iir,
+        f32,
+        note_attach_freq_iir,
+        0.,
+        3.
+    );
+    notefinder_configuration!(
+        set_note_attach_amp_iir,
+        note_attach_amp_iir,
+        f32,
+        note_attach_amp_iir,
+        0.,
+        3.
+    );
+    notefinder_configuration!(
+        set_note_attach_amp_iir2,
+        note_attach_amp_iir2,
+        f32,
+        note_attach_amp_iir2,
+        0.,
+        3.
+    );
+    //A distribution must be /this/ big otherwise, it will be discarded
+    notefinder_configuration!(
+        set_note_minimum_new_distribution_value,
+        note_minimum_new_distribution_value,
+        f32,
+        note_minimum_new_distribution_value,
+        0.,
+        1.
+    );
+    //How much to decimate the output notes to reduce spurious noise
+    notefinder_configuration!(set_note_out_chop, note_out_chop, f32, note_out_chop, 0., 1.);
+    //IIR to impose the output of the IIR.
+    notefinder_configuration!(set_dft_iir, dft_iir, f32, dft_iir, 0., 10.);
 }
 
 pub fn cc_to_rgb(mut note: f32, saturation: f32, value: f32) -> [f32; 3] {

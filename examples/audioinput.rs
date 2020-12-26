@@ -70,6 +70,7 @@ fn audioprocess(c: Sender<NoteResult>) {
     let mut r = Ringbuffer::new(tx);
     let host = cpal::default_host();
     let mut notefinder = rustchord::Notefinder::new(48000);
+    notefinder.set_amplification(10.);
     let device = host
         .default_input_device()
         .expect("Failed to get default input device");
