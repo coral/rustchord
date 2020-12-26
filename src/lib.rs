@@ -52,6 +52,14 @@ macro_rules! notefinder_configuration {
     };
 }
 
+pub enum DFTAlgorithm {
+    DFTQuick,
+    DFTProgressive,
+    DFTProgressiveInteger,
+    DFTProgressiveIntegerSkippy,
+    DFTProgressive32,
+}
+
 pub struct Notefinder {
     nf: *mut internal::NoteFinder,
 }
@@ -100,6 +108,17 @@ impl Notefinder {
         return unsafe {
             slice::from_raw_parts((*self.nf).folded_bins, (*self.nf).freqbins as usize)
         };
+    }
+    pub fn set_dft_algorithm(&mut self, algo: DFTAlgorithm) {
+        use DFTAlgorithm::*;
+        let dftalgo = match algo {
+            DFTQuick => 0,
+            DFTProgressive => 1,
+            DFTProgressiveInteger => 2,
+            DFTProgressiveIntegerSkippy => 3,
+            DFTProgressive32 => 4,
+        };
+        unsafe { (*self.nf).do_progressive_dft = dftalgo }
     }
     notefinder_configuration!(set_octaves, octaves, i32, octaves, 0, 8);
     notefinder_configuration!(set_frequency_bins, freqbins, i32, frequency_bins, 12, 48);
