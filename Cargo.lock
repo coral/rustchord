@@ -1926,7 +1926,7 @@ dependencies = [
 
 [[package]]
 name = "rustchord"
-version = "0.3.1-alpha.0"
+version = "0.3.1"
 dependencies = [
  "bindgen",
  "cc",
