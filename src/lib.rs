@@ -5,7 +5,7 @@ use palette::{ConvertInto, Hsv, LinSrgb, Pixel};
 use std::fmt::Debug;
 use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct NoteDists {
     pub amp: f32,    //Amplitude of normal distribution
     pub mean: f32,   //Mean of normal distribution
@@ -13,7 +13,7 @@ pub struct NoteDists {
     pub taken: bool, //Is distribution associated with any notes?
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Note {
     pub active: bool,
     pub id: f32,

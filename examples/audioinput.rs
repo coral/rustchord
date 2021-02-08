@@ -28,7 +28,7 @@ fn main() {
     while let Some(event) = window.next() {
         window.draw_2d(&event, |context, graphics, _device| {
             while let Ok(v) = rx.try_recv() {
-                clear([1.0; 4], graphics);
+                clear([0.; 4], graphics);
 
                 //Frequency bins
                 for (i, n) in v.folded.into_iter().enumerate() {
