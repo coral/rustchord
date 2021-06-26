@@ -2,10 +2,11 @@ use std::slice;
 mod internal;
 
 use palette::{ConvertInto, Hsv, LinSrgb, Pixel};
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use thiserror::Error;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct NoteDists {
     pub amp: f32,    //Amplitude of normal distribution
     pub mean: f32,   //Mean of normal distribution
@@ -13,7 +14,7 @@ pub struct NoteDists {
     pub taken: bool, //Is distribution associated with any notes?
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Note {
     pub active: bool,
     pub id: f32,
