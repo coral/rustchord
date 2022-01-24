@@ -61,10 +61,15 @@ macro_rules! notefinder_configuration {
 }
 
 pub enum DFTAlgorithm {
+    /// Fastest algorithm, results are worse. Useful on low end hardware
     DFTQuick,
+    /// Default algorithm
     DFTProgressive,
+    /// Progressive DFT using integer math
     DFTProgressiveInteger,
+    /// Progressive DFT using skippy integer math
     DFTProgressiveIntegerSkippy,
+    /// Progressive DFT using float32
     DFTProgressive32,
 }
 
@@ -75,17 +80,23 @@ pub struct Notefinder {
 unsafe impl Send for Notefinder {}
 
 impl Notefinder {
+    /// Create a new instance of the Notefinder with the desired samplerate.
+    ///
+    /// Samplerate can only be set during creation.
     pub fn new(samplerate: i32) -> Notefinder {
         return Notefinder {
             nf: unsafe { internal::CreateNoteFinder(samplerate) },
         };
     }
+
+    /// Run the notefinder over the provided buffer
     pub fn run(&mut self, data: &[f32]) {
         unsafe {
             internal::RunNoteFinder(self.nf, data.as_ptr(), 0, data.len() as i32);
         }
     }
 
+    /// Get the discovered notes
     pub fn get_notes(&self) -> Vec<Note> {
         let freqbins: f32 = unsafe { (*self.nf).freqbins } as f32;
         let note_peaks: usize = unsafe { (*self.nf).note_peaks } as usize;
@@ -117,6 +128,10 @@ impl Notefinder {
             slice::from_raw_parts((*self.nf).folded_bins, (*self.nf).freqbins as usize)
         };
     }
+
+    /// Use this to change the Discrete Fourier transform algorithm.
+    ///
+    /// Options defined in DFTAlgorithm
     pub fn set_dft_algorithm(&mut self, algo: DFTAlgorithm) {
         use DFTAlgorithm::*;
         let dftalgo = match algo {
@@ -129,7 +144,8 @@ impl Notefinder {
         unsafe { (*self.nf).do_progressive_dft = dftalgo }
     }
     notefinder_configuration!(
-        /// Sets the span of octaves, defaults to 8
+        /// Sets the span of octaves
+        /// Defaults to 8
         set_octaves,
         octaves,
         i32,
@@ -138,7 +154,8 @@ impl Notefinder {
         8
     );
     notefinder_configuration!(
-        /// Defines the number of frequency bins, defaults to 24
+        /// Defines the number of frequency bins
+        /// Defaults to 24
         set_frequency_bins,
         freqbins,
         i32,
@@ -147,7 +164,8 @@ impl Notefinder {
         48
     );
     notefinder_configuration!(
-        /// Set the base Hz for the notefinder to start at, defaults to 0
+        /// Set the base Hz for the notefinder to start at
+        /// Defaults to 0
         set_base_hz,
         base_hz,
         f32,
@@ -156,6 +174,8 @@ impl Notefinder {
         20000.
     );
     notefinder_configuration!(
+        /// Controls the strength of the filter
+        /// Defaults to 0.5
         set_filter_strength,
         filter_strength,
         f32,
@@ -164,7 +184,8 @@ impl Notefinder {
         1.
     );
     notefinder_configuration!(
-        /// Set filter iterations, the higher the better but does cost CPU, defaults to 1.
+        /// Set filter iterations, the higher the better but does cost CPU
+        /// Defaults to 1.
         set_filter_iterations,
         filter_iter,
         i32,
@@ -210,6 +231,7 @@ impl Notefinder {
     );
     notefinder_configuration!(
         /// At 300, there is still some minimal aliasing at higher frequencies.  Increase this for less low-end distortion
+        /// Defaults to 300
         set_dft_speedup,
         dft_speedup,
         f32,
@@ -219,6 +241,7 @@ impl Notefinder {
     );
     notefinder_configuration!(
         /// The "tightness" of the curve, or how many samples back to look?
+        /// Defaults to 16
         set_dft_q,
         dft_q,
         f32,
@@ -227,7 +250,10 @@ impl Notefinder {
         64.
     );
     notefinder_configuration!(
-        /// This controls the expected shape of the normal distributions.  I am not sure how to calculate this from samplerate, Q and bins.
+        /// This controls the expected shape of the normal distributions.
+        /// Defaults to 1.4
+        ///
+        /// Author of Colorchord notes "I am not sure how to calculate this from samplerate, Q and bins."
         set_default_sigma,
         default_sigma,
         f32,
@@ -237,6 +263,7 @@ impl Notefinder {
     );
     notefinder_configuration!(
         /// How far established notes are allowed to "jump" in order to attach themselves to a new "peak"
+        /// Default 0.5
         set_note_jumpability,
         note_jumpability,
         f32,
@@ -246,6 +273,7 @@ impl Notefinder {
     );
     notefinder_configuration!(
         /// How close established notes need to be to each other before they can be "combined" into a single note.
+        /// Defaults to 0.5
         set_note_combine_distance,
         note_combine_distance,
         f32,
@@ -279,7 +307,8 @@ impl Notefinder {
         3.
     );
     notefinder_configuration!(
-        /// How much to decimate the output notes to reduce spurious noise
+        /// A distribution must be /this/ big otherwise, it will be discarded.
+        /// Defaults to 0.02
         set_note_minimum_new_distribution_value,
         note_minimum_new_distribution_value,
         f32,
@@ -297,7 +326,7 @@ impl Notefinder {
         1.
     );
     notefinder_configuration!(
-        /// How much to decimate the output notes to reduce spurious noise
+        /// IIR (infinite impulse response) to impose the output of the IIR.
         set_dft_iir,
         dft_iir,
         f32,
