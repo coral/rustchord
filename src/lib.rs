@@ -8,10 +8,14 @@ use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct NoteDists {
-    pub amp: f32,    //Amplitude of normal distribution
-    pub mean: f32,   //Mean of normal distribution
-    pub sigma: f32,  //Sigma of normal distribution
-    pub taken: bool, //Is distribution associated with any notes?
+    /// Amplitude of normal distribution
+    pub amp: f32,
+    /// Mean of normal distribution
+    pub mean: f32,
+    /// Sigma of normal distribution
+    pub sigma: f32,
+    /// Is distribution associated with any notes?
+    pub taken: bool,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -37,7 +41,10 @@ pub enum NoteFinderValidationError<T: Debug> {
 }
 
 macro_rules! notefinder_configuration {
-    ($func_name:ident, $setting:ident, $v:ty, $name:ident, $min:expr, $max:expr) => {
+    (
+    $(#[$meta:meta])*
+    $func_name:ident, $setting:ident, $v:ty, $name:ident, $min:expr, $max:expr) => {
+        $(#[$meta])*
         pub fn $func_name(&self, $name: $v) -> Result<(), NoteFinderValidationError<$v>> {
             if $name < $min || $name > $max {
                 return Err(NoteFinderValidationError::OutsideValidRange {
@@ -121,9 +128,33 @@ impl Notefinder {
         };
         unsafe { (*self.nf).do_progressive_dft = dftalgo }
     }
-    notefinder_configuration!(set_octaves, octaves, i32, octaves, 0, 8);
-    notefinder_configuration!(set_frequency_bins, freqbins, i32, frequency_bins, 12, 48);
-    notefinder_configuration!(set_base_hz, base_hz, f32, base_hz, 0., 20000.);
+    notefinder_configuration!(
+        /// Sets the span of octaves, defaults to 8
+        set_octaves,
+        octaves,
+        i32,
+        octaves,
+        0,
+        8
+    );
+    notefinder_configuration!(
+        /// Defines the number of frequency bins, defaults to 24
+        set_frequency_bins,
+        freqbins,
+        i32,
+        frequency_bins,
+        12,
+        48
+    );
+    notefinder_configuration!(
+        /// Set the base Hz for the notefinder to start at, defaults to 0
+        set_base_hz,
+        base_hz,
+        f32,
+        base_hz,
+        0.,
+        20000.
+    );
     notefinder_configuration!(
         set_filter_strength,
         filter_strength,
@@ -133,6 +164,7 @@ impl Notefinder {
         1.
     );
     notefinder_configuration!(
+        /// Set filter iterations, the higher the better but does cost CPU, defaults to 1.
         set_filter_iterations,
         filter_iter,
         i32,
@@ -141,6 +173,7 @@ impl Notefinder {
         8
     );
     notefinder_configuration!(
+        /// Set decompose iterations, defaults to 1000
         set_decompose_iterations,
         decompose_iterations,
         i32,
@@ -148,10 +181,17 @@ impl Notefinder {
         100,
         10000
     );
-    // Amplify input across the board
-    notefinder_configuration!(set_amplification, amplify, f32, amplification, 0.0, 40.0);
-    // How much to compress the sound by before putting it into the compressor.
     notefinder_configuration!(
+        /// Amplify input across the board
+        set_amplification,
+        amplify,
+        f32,
+        amplification,
+        0.0,
+        40.0
+    );
+    notefinder_configuration!(
+        /// How much to compress the sound by before putting it into the compressor.
         set_compress_exponent,
         compress_exponenet,
         f32,
@@ -159,8 +199,8 @@ impl Notefinder {
         0.,
         10.
     );
-    // Exponent of the compressor lower = make more uniform.
     notefinder_configuration!(
+        /// Exponent of the compressor lower = make more uniform.
         set_compress_coefficient,
         compress_coefficient,
         f32,
@@ -168,14 +208,35 @@ impl Notefinder {
         0.,
         5.
     );
-    //at 300, there is still some minimal aliasing at higher frequencies.  Increase this for less low-end distortion
-    notefinder_configuration!(set_dft_speedup, dft_speedup, f32, dft_speedup, 100., 20000.);
-    //The "tightness" of the curve, or how many samples back to look?
-    notefinder_configuration!(set_dft_q, dft_q, f32, dft_q, 4., 64.);
-    //This controls the expected shape of the normal distributions.  I am not sure how to calculate this from samplerate, Q and bins.
-    notefinder_configuration!(set_default_sigma, default_sigma, f32, default_sigma, 0., 8.);
-    //How far established notes are allowed to "jump" in order to attach themselves to a new "peak"
     notefinder_configuration!(
+        /// At 300, there is still some minimal aliasing at higher frequencies.  Increase this for less low-end distortion
+        set_dft_speedup,
+        dft_speedup,
+        f32,
+        dft_speedup,
+        100.,
+        20000.
+    );
+    notefinder_configuration!(
+        /// The "tightness" of the curve, or how many samples back to look?
+        set_dft_q,
+        dft_q,
+        f32,
+        dft_q,
+        4.,
+        64.
+    );
+    notefinder_configuration!(
+        /// This controls the expected shape of the normal distributions.  I am not sure how to calculate this from samplerate, Q and bins.
+        set_default_sigma,
+        default_sigma,
+        f32,
+        default_sigma,
+        0.,
+        8.
+    );
+    notefinder_configuration!(
+        /// How far established notes are allowed to "jump" in order to attach themselves to a new "peak"
         set_note_jumpability,
         note_jumpability,
         f32,
@@ -183,8 +244,8 @@ impl Notefinder {
         0.,
         8.
     );
-    //How close established notes need to be to each other before they can be "combined" into a single note.
     notefinder_configuration!(
+        /// How close established notes need to be to each other before they can be "combined" into a single note.
         set_note_combine_distance,
         note_combine_distance,
         f32,
@@ -217,8 +278,8 @@ impl Notefinder {
         0.,
         3.
     );
-    //A distribution must be /this/ big otherwise, it will be discarded
     notefinder_configuration!(
+        /// How much to decimate the output notes to reduce spurious noise
         set_note_minimum_new_distribution_value,
         note_minimum_new_distribution_value,
         f32,
@@ -226,10 +287,24 @@ impl Notefinder {
         0.,
         1.
     );
-    //How much to decimate the output notes to reduce spurious noise
-    notefinder_configuration!(set_note_out_chop, note_out_chop, f32, note_out_chop, 0., 1.);
-    //IIR to impose the output of the IIR.
-    notefinder_configuration!(set_dft_iir, dft_iir, f32, dft_iir, 0., 10.);
+    notefinder_configuration!(
+        /// How much to decimate the output notes to reduce spurious noise
+        set_note_out_chop,
+        note_out_chop,
+        f32,
+        note_out_chop,
+        0.,
+        1.
+    );
+    notefinder_configuration!(
+        /// How much to decimate the output notes to reduce spurious noise
+        set_dft_iir,
+        dft_iir,
+        f32,
+        dft_iir,
+        0.,
+        10.
+    );
 }
 
 pub fn cc_to_rgb(mut note: f32, saturation: f32, value: f32) -> [f32; 3] {
