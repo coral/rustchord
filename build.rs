@@ -1,6 +1,3 @@
-extern crate bindgen;
-extern crate cc;
-
 use std::env;
 use std::path::PathBuf;
 
@@ -45,12 +42,15 @@ fn main() {
     ];
     let mut bld = bindgen::Builder::default();
     for header in m.iter() {
-        let hdr: String = "colorchord/colorchord2/".to_string() + &header.to_string();
+        let hdr = format!("colorchord/colorchord2/{header}");
         println!("cargo:rerun-if-changed={}", hdr);
         bld = bld.header(hdr);
     }
     let bindings = bld
+        .clang_arg("-Icolorchord/colorchord2")
         .clang_arg("-Icolorchord/colorchord2/rawdraw")
+        .clang_arg("-Icolorchord/embeddedcommon")
+        .clang_arg("-I./include")
         .generate()
         .expect("Unable to generate bindings");
 

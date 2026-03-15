@@ -1,9 +1,9 @@
-use cpal;
 use cpal::traits::{DeviceTrait, HostTrait};
 use rustchord::{self, cc_to_rgb};
 use std::sync::mpsc::*;
 use std::thread;
 
+use piston_window::graphics::{clear, rectangle};
 use piston_window::*;
 
 struct NoteResult {
@@ -73,11 +73,11 @@ fn audioprocess(c: Sender<NoteResult>) {
     let device = host
         .default_input_device()
         .expect("Failed to get default input device");
-    println!("{:?}", device.name());
+    println!("{:?}", device.description());
     let config = &cpal::StreamConfig {
         channels: 1,
         buffer_size: cpal::BufferSize::Fixed(512),
-        sample_rate: cpal::SampleRate(48_000),
+        sample_rate: 48_000,
     };
     let err_fn = move |err| {
         eprintln!("an error occurred on stream: {}", err);
@@ -86,7 +86,8 @@ fn audioprocess(c: Sender<NoteResult>) {
         config,
         move |data, inp: &cpal::InputCallbackInfo| r.audio_callback(data, inp),
         err_fn,
-    );
+        None,
+    ).expect("Failed to build input stream");
 
     while let Ok(v) = rx.recv() {
         notefinder.run(&v);

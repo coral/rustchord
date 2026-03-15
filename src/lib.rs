@@ -1,7 +1,7 @@
 use std::slice;
 mod internal;
 
-use palette::{Hsv, IntoColor, Pixel, Srgb};
+use palette::{Hsv, IntoColor, Srgb};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use thiserror::Error;
@@ -355,5 +355,5 @@ pub fn cc_to_rgb(mut note: f32, saturation: f32, value: f32) -> [f32; 3] {
 
     let c: Srgb = Hsv::new(hue * 360., saturation, value).into_color();
 
-    c.into_format().into_raw()
+    c.into_format().into()
 }
