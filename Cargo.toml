@@ -7,6 +7,8 @@ license-file = "LICENSE.md"
 keywords = ["colorchord", "audio"]
 categories = ["multimedia::audio", "api-bindings"]
 description = "Colorchord bindings for Rust"
+repository = "https://github.com/coral/rustchord"
+documentation = "https://docs.rs/rustchord"
 
 
 [lib]
