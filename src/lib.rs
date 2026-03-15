@@ -28,6 +28,16 @@ pub struct Note {
     pub endured: i32,
 }
 
+/// Profiling timers from the internal C pipeline.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Timing {
+    pub start: f64,
+    pub dft: f64,
+    pub filter: f64,
+    pub decompose: f64,
+    pub finalize: f64,
+}
+
 #[derive(Error, Debug)]
 pub enum NoteFinderValidationError<T: Debug> {
     #[error("Outside valid range ({expected_min:?} - {expected_max:?}, found {found:?})")]
@@ -77,16 +87,40 @@ pub struct Notefinder {
     nf: *mut internal::NoteFinder,
 }
 
+// SAFETY: The underlying C NoteFinder state is not thread-safe.
+// Send is safe because ownership can transfer between threads.
+// Sync is intentionally NOT implemented — concurrent access from
+// multiple threads would race on the C state.
 unsafe impl Send for Notefinder {}
+
+impl Drop for Notefinder {
+    fn drop(&mut self) {
+        unsafe {
+            let nf = &mut *self.nf;
+            libc::free(nf.note_positions as *mut libc::c_void);
+            libc::free(nf.note_amplitudes as *mut libc::c_void);
+            libc::free(nf.note_amplitudes_out as *mut libc::c_void);
+            libc::free(nf.note_amplitudes2 as *mut libc::c_void);
+            libc::free(nf.note_founds as *mut libc::c_void);
+            libc::free(nf.note_peaks_to_dists_mapping as *mut libc::c_void);
+            libc::free(nf.enduring_note_id as *mut libc::c_void);
+            libc::free(nf.frequencies as *mut libc::c_void);
+            libc::free(nf.outbins as *mut libc::c_void);
+            libc::free(nf.folded_bins as *mut libc::c_void);
+            libc::free(nf.dists as *mut libc::c_void);
+            libc::free(self.nf as *mut libc::c_void);
+        }
+    }
+}
 
 impl Notefinder {
     /// Create a new instance of the Notefinder with the desired samplerate.
     ///
     /// Samplerate can only be set during creation.
     pub fn new(samplerate: i32) -> Notefinder {
-        return Notefinder {
+        Notefinder {
             nf: unsafe { internal::CreateNoteFinder(samplerate) },
-        };
+        }
     }
 
     /// Run the notefinder over the provided buffer
@@ -98,35 +132,95 @@ impl Notefinder {
 
     /// Get the discovered notes
     pub fn get_notes(&self) -> Vec<Note> {
-        let freqbins: f32 = unsafe { (*self.nf).freqbins } as f32;
-        let note_peaks: usize = unsafe { (*self.nf).note_peaks } as usize;
-        let mut notes: Vec<Note> = Vec::new();
-        for i in 0..note_peaks {
-            unsafe {
-                let dist = (*self.nf).dists.offset(i as isize);
-                notes.push(Note {
-                    active: *(*self.nf).note_amplitudes_out.offset(i as isize) > 0.,
-                    id: *(*self.nf).note_positions.offset(i as isize) / freqbins,
-                    dist: NoteDists {
-                        amp: (*dist).amp,
-                        mean: (*dist).mean,
-                        sigma: (*dist).sigma,
-                        taken: (*dist).taken != 0,
-                    },
-                    amplitude_out: { *(*self.nf).note_amplitudes_out.offset(i as isize) },
-                    amplitude_iir2: { *(*self.nf).note_amplitudes2.offset(i as isize) },
-                    endured: { *(*self.nf).enduring_note_id.offset(i as isize) },
-                })
-            }
-        }
+        unsafe {
+            let nf = &*self.nf;
+            let note_peaks = nf.note_peaks as usize;
+            let freqbins = nf.freqbins as f32;
+            let positions = slice::from_raw_parts(nf.note_positions, note_peaks);
+            let amps_out = slice::from_raw_parts(nf.note_amplitudes_out, note_peaks);
+            let amps2 = slice::from_raw_parts(nf.note_amplitudes2, note_peaks);
+            let enduring = slice::from_raw_parts(nf.enduring_note_id, note_peaks);
+            let dists = slice::from_raw_parts(nf.dists, note_peaks);
 
-        notes
+            (0..note_peaks)
+                .map(|i| Note {
+                    active: amps_out[i] > 0.0,
+                    id: positions[i] / freqbins,
+                    dist: NoteDists {
+                        amp: dists[i].amp,
+                        mean: dists[i].mean,
+                        sigma: dists[i].sigma,
+                        taken: dists[i].taken != 0,
+                    },
+                    amplitude_out: amps_out[i],
+                    amplitude_iir2: amps2[i],
+                    endured: enduring[i],
+                })
+                .collect()
+        }
     }
 
-    pub fn get_folded<'a>(&'a self) -> &'a [f32] {
-        return unsafe {
-            slice::from_raw_parts((*self.nf).folded_bins, (*self.nf).freqbins as usize)
-        };
+    /// Get the folded frequency bins
+    pub fn get_folded(&self) -> &[f32] {
+        unsafe { slice::from_raw_parts((*self.nf).folded_bins, (*self.nf).freqbins as usize) }
+    }
+
+    /// Get the raw DFT output bins (length = freqbins * octaves)
+    pub fn get_outbins(&self) -> &[f32] {
+        unsafe {
+            let nf = &*self.nf;
+            slice::from_raw_parts(nf.outbins, (nf.freqbins * nf.octaves) as usize)
+        }
+    }
+
+    /// Get the frequency array (length = freqbins * octaves)
+    pub fn get_frequencies(&self) -> &[f32] {
+        unsafe {
+            let nf = &*self.nf;
+            slice::from_raw_parts(nf.frequencies, (nf.freqbins * nf.octaves) as usize)
+        }
+    }
+
+    /// Get the raw distribution data
+    pub fn get_distributions(&self) -> &[internal::NoteDists] {
+        unsafe {
+            let nf = &*self.nf;
+            slice::from_raw_parts(nf.dists, nf.dists_count as usize)
+        }
+    }
+
+    /// Number of note peaks tracked
+    pub fn note_peaks(&self) -> usize {
+        unsafe { (*self.nf).note_peaks as usize }
+    }
+
+    /// Number of frequency bins per octave
+    pub fn frequency_bins(&self) -> i32 {
+        unsafe { (*self.nf).freqbins }
+    }
+
+    /// Number of octaves
+    pub fn octaves(&self) -> i32 {
+        unsafe { (*self.nf).octaves }
+    }
+
+    /// Reciprocal of sample rate
+    pub fn sample_rate(&self) -> f32 {
+        unsafe { (*self.nf).sps_rec }
+    }
+
+    /// Get internal profiling timers from the last `run()` call
+    pub fn timing(&self) -> Timing {
+        unsafe {
+            let nf = &*self.nf;
+            Timing {
+                start: nf.StartTime,
+                dft: nf.DFTTime,
+                filter: nf.FilterTime,
+                decompose: nf.DecomposeTime,
+                finalize: nf.FinalizeTime,
+            }
+        }
     }
 
     /// Use this to change the Discrete Fourier transform algorithm.
@@ -355,5 +449,14 @@ pub fn cc_to_rgb(mut note: f32, saturation: f32, value: f32) -> [f32; 3] {
 
     let c: Srgb = Hsv::new(hue * 360., saturation, value).into_color();
 
+    c.into_format().into()
+}
+
+/// Convert HSV color values to RGB.
+///
+/// Hue is in the range 0.0..1.0 (mapped to 0-360 degrees internally),
+/// saturation and value are in the range 0.0..1.0.
+pub fn hsv_to_rgb(hue: f32, saturation: f32, value: f32) -> [f32; 3] {
+    let c: Srgb = Hsv::new(hue * 360.0, saturation, value).into_color();
     c.into_format().into()
 }

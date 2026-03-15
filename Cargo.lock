@@ -2538,6 +2538,7 @@ dependencies = [
  "bindgen",
  "cc",
  "cpal",
+ "libc",
  "palette",
  "piston_window",
  "serde",

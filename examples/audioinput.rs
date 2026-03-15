@@ -82,12 +82,14 @@ fn audioprocess(c: Sender<NoteResult>) {
     let err_fn = move |err| {
         eprintln!("an error occurred on stream: {}", err);
     };
-    let _stream = device.build_input_stream(
-        config,
-        move |data, inp: &cpal::InputCallbackInfo| r.audio_callback(data, inp),
-        err_fn,
-        None,
-    ).expect("Failed to build input stream");
+    let _stream = device
+        .build_input_stream(
+            config,
+            move |data, inp: &cpal::InputCallbackInfo| r.audio_callback(data, inp),
+            err_fn,
+            None,
+        )
+        .expect("Failed to build input stream");
 
     while let Ok(v) = rx.recv() {
         notefinder.run(&v);
