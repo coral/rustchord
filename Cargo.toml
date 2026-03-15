@@ -1,6 +1,6 @@
 [package]
 name = "rustchord"
-version = "0.5.1-alpha.0"
+version = "0.6.0"
 authors = ["coral <jonas@jonasbengtson.se>"]
 edition = "2024"
 license-file = "LICENSE.md"
