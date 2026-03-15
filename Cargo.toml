@@ -21,7 +21,7 @@ bindgen = "0.72.1"
 
 [dependencies]
 libc = "0.2"
-palette = "0.7.6"
+
 thiserror = "2.0.18"
 serde = { version = "1.0", features = ["derive"] }
 

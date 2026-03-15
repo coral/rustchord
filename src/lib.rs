@@ -1,7 +1,7 @@
 use std::slice;
 mod internal;
 
-use palette::{Hsv, IntoColor, Srgb};
+
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use thiserror::Error;
@@ -431,32 +431,56 @@ impl Notefinder {
 }
 
 pub fn cc_to_rgb(mut note: f32, saturation: f32, value: f32) -> [f32; 3] {
-    let hue: f32;
     note %= 1.0;
     note *= 12.0;
-    if note < 4.0 {
-        //Needs to be YELLOW->RED
-        hue = (4.0 - note) / 24.0;
+    let hue = if note < 4.0 {
+        (4.0 - note) / 24.0
     } else if note < 8.0 {
-        //            [4]  [8]
-        //Needs to be RED->BLUE
-        hue = (4.0 - note) / 12.0;
+        (4.0 - note) / 12.0
     } else {
-        //             [8] [12]
-        //Needs to be BLUE->YELLOW
-        hue = (12.0 - note) / 8.0 + 1.0 / 6.0;
-    }
-
-    let c: Srgb = Hsv::new(hue * 360., saturation, value).into_color();
-
-    c.into_format().into()
+        (12.0 - note) / 8.0 + 1.0 / 6.0
+    };
+    hsv_to_rgb(hue, saturation, value)
 }
 
-/// Convert HSV color values to RGB.
+/// Convert HSV color values to RGB, matching the C colorchord `HSVtoHEX` algorithm.
 ///
 /// Hue is in the range 0.0..1.0 (mapped to 0-360 degrees internally),
 /// saturation and value are in the range 0.0..1.0.
 pub fn hsv_to_rgb(hue: f32, saturation: f32, value: f32) -> [f32; 3] {
-    let c: Srgb = Hsv::new(hue * 360.0, saturation, value).into_color();
-    c.into_format().into()
+    let mut ro = (hue * 6.0).rem_euclid(6.0);
+    ro = (ro + 1.0).rem_euclid(6.0); // 60° hue rotation matching C
+
+    let (mut pr, mut pg, mut pb) = (0.0f32, 0.0f32, 0.0f32);
+    if ro < 1.0 {
+        pr = 1.0;
+        pg = 1.0 - ro;
+    } else if ro < 2.0 {
+        pr = 1.0;
+        pb = ro - 1.0;
+    } else if ro < 3.0 {
+        pr = 3.0 - ro;
+        pb = 1.0;
+    } else if ro < 4.0 {
+        pb = 1.0;
+        pg = ro - 3.0;
+    } else if ro < 5.0 {
+        pb = 5.0 - ro;
+        pg = 1.0;
+    } else {
+        pg = 1.0;
+        pr = ro - 5.0;
+    }
+
+    pr *= value;
+    pg *= value;
+    pb *= value;
+
+    let avg = pr + pg + pb;
+    pr = pr * saturation + avg * (1.0 - saturation);
+    pg = pg * saturation + avg * (1.0 - saturation);
+    pb = pb * saturation + avg * (1.0 - saturation);
+
+    // Channel swap matching C: og=pb, ob=pg
+    [pr.clamp(0.0, 1.0), pb.clamp(0.0, 1.0), pg.clamp(0.0, 1.0)]
 }

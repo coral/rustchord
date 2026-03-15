@@ -20,8 +20,9 @@ fn main() {
         .unwrap();
     window.next();
 
-    let width = window.size().width / 24.;
-    let notew = window.size().width / 12.;
+    let window_w = window.size().width;
+    let width = window_w / 24.;
+    let notew = window_w / 12.;
     let middle = window.size().height / 2.;
     let bottom = window.size().height;
 
@@ -42,16 +43,17 @@ fn main() {
                     );
                 }
 
-                for (i, n) in v.notes.into_iter().enumerate() {
+                for n in v.notes.into_iter() {
                     if !n.active {
                         continue;
                     }
                     let c = cc_to_rgb(n.id as f32, 1.0, 1.0);
+                    let x = (n.id as f64 % 1.0) * window_w;
 
                     rectangle(
                         [c[0], c[1], c[2], 1.0],
                         [
-                            notew * i as f64,
+                            x,
                             middle,
                             notew,
                             -(n.amplitude_out as f64 * 200.),
