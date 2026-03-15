@@ -2,7 +2,7 @@
 name = "rustchord"
 version = "0.5.1-alpha.0"
 authors = ["coral <jonas@jonasbengtson.se>"]
-edition = "2021"
+edition = "2024"
 license-file = "LICENSE.md"
 keywords = ["colorchord", "audio"]
 categories = ["multimedia::audio", "api-bindings"]
